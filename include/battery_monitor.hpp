@@ -40,6 +40,8 @@ public:
     bool is_initialized() const override;
 
 private:
+    esp_err_t validate_config() const;
+
     IAdcBatteryReader& adc_reader_;
     BatteryMonitorConfig config_;
     bool initialized_;

@@ -22,7 +22,13 @@ esp_err_t BatteryMonitor::init()
         return ESP_ERR_INVALID_STATE;
     }
 
-    esp_err_t err = adc_reader_.init();
+    esp_err_t err = validate_config();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Configuration validation failed: %d", err);
+        return err;
+    }
+
+    err = adc_reader_.init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize ADC reader: %d", err);
         return err;
@@ -68,10 +74,6 @@ esp_err_t BatteryMonitor::read(BatteryReading& out)
     out.adc_mv = adc_mv;
 
     // Calculate battery voltage using voltage divider compensation
-    if (config_.divider_bottom_ohms == 0) {
-        ESP_LOGE(TAG, "Invalid config: divider_bottom_ohms cannot be 0");
-        return ESP_ERR_INVALID_ARG;
-    }
     uint32_t calculated_voltage = static_cast<uint32_t>(adc_mv) *
                                   (config_.divider_top_ohms + config_.divider_bottom_ohms) /
                                   config_.divider_bottom_ohms;
@@ -110,6 +112,30 @@ esp_err_t BatteryMonitor::read(BatteryReading& out)
 bool BatteryMonitor::is_initialized() const
 {
     return initialized_;
+}
+
+esp_err_t BatteryMonitor::validate_config() const
+{
+    if (config_.divider_bottom_ohms == 0) {
+        ESP_LOGE(TAG, "Invalid config: divider_bottom_ohms cannot be 0");
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (config_.full_mv <= config_.empty_mv) {
+        ESP_LOGE(TAG, "Invalid config: full_mv (%d) must be greater than empty_mv (%d)",
+                 config_.full_mv, config_.empty_mv);
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (config_.critical_mv > config_.low_mv) {
+        ESP_LOGE(TAG, "Invalid config: critical_mv (%d) cannot be greater than low_mv (%d)",
+                 config_.critical_mv, config_.low_mv);
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (config_.low_mv > config_.full_mv) {
+        ESP_LOGE(TAG, "Invalid config: low_mv (%d) cannot be greater than full_mv (%d)",
+                 config_.low_mv, config_.full_mv);
+        return ESP_ERR_INVALID_ARG;
+    }
+    return ESP_OK;
 }
 
 } // namespace battery_monitor

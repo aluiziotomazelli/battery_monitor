@@ -165,16 +165,32 @@ TEST_F(BatteryMonitorTest, ReadFailOnReaderError) {
     EXPECT_EQ(monitor->read(reading), ESP_FAIL);
 }
 
-TEST_F(BatteryMonitorTest, ReadFailDividerBottomZero) {
+TEST_F(BatteryMonitorTest, InitFailInvalidConfig) {
+    // 1. divider_bottom_ohms = 0
     config_.divider_bottom_ohms = 0;
-    // Re-create monitor with invalid config
     monitor = std::make_unique<BatteryMonitor>(*mock_reader, config_);
+    EXPECT_EQ(monitor->init(), ESP_ERR_INVALID_ARG);
 
-    EXPECT_CALL(*mock_reader, init()).WillOnce(Return(ESP_OK));
-    ASSERT_EQ(monitor->init(), ESP_OK);
+    // 2. full_mv <= empty_mv
+    config_ = {};
+    config_.full_mv = 3000;
+    config_.empty_mv = 3000;
+    monitor = std::make_unique<BatteryMonitor>(*mock_reader, config_);
+    EXPECT_EQ(monitor->init(), ESP_ERR_INVALID_ARG);
 
-    BatteryReading reading;
-    EXPECT_EQ(monitor->read(reading), ESP_ERR_INVALID_ARG);
+    // 3. critical_mv > low_mv
+    config_ = {};
+    config_.critical_mv = 3500;
+    config_.low_mv = 3400;
+    monitor = std::make_unique<BatteryMonitor>(*mock_reader, config_);
+    EXPECT_EQ(monitor->init(), ESP_ERR_INVALID_ARG);
+
+    // 4. low_mv > full_mv
+    config_ = {};
+    config_.low_mv = 4300;
+    config_.full_mv = 4200;
+    monitor = std::make_unique<BatteryMonitor>(*mock_reader, config_);
+    EXPECT_EQ(monitor->init(), ESP_ERR_INVALID_ARG);
 }
 
 
