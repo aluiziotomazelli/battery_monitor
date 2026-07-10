@@ -8,7 +8,6 @@ idf_component_register(
     INCLUDE_DIRS
         "."
         "../../common"
-        "../../../../../host_test/common"
         
     REQUIRES 
         battery_monitor
