@@ -4,7 +4,7 @@
 [![Host Tests](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml/badge.svg)](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml)
 [![Coverage](https://img.shields.io/badge/coverage-96.7%25-green)](https://aluiziotomazelli.github.io/battery-monitor/index.html)
 
-The `BatteryMonitor` component provides a robust abstraction for monitoring rechargeable battery state, voltage levels, and capacity percentages. It calculates battery voltage using a hardware voltage divider scale, averages out noise via multi-sample ADC readings, applies factory calibration parameters, and classifies battery health/levels into standard states.
+The `BatteryMonitor` component provides a robust abstraction for monitoring battery voltage levels. It calculates battery voltage using a hardware voltage divider scale, averages out noise via multi-sample ADC readings, and applies factory calibration parameters.
 
 ---
 
@@ -17,7 +17,7 @@ This component has been designed according to strict architectural guidelines to
    
 2. **Single Responsibility Principle (SRP)**:
    - **`AdcBatteryReader`** is solely responsible for low-level interactions (GPIO-to-channel mapping, channel configurations, multi-sample averaging with delay, and applying eFuse calibration schemes).
-   - **`BatteryMonitor`** is solely responsible for processing voltage divider formulas, mapping battery levels linearly to charge percentage (0-100%), and classifying battery charge states.
+   - **`BatteryMonitor`** is solely responsible for processing voltage divider formulas to determine the battery's real voltage.
    
 3. **Dependency Injection**:
    All dependencies (including the timer delay HAL and low-level ADC reader) are passed via constructors using interface references. This allows compiling and testing the business logic on host platforms (like Linux) by injecting Google Mock objects, isolating tests from real microcontroller hardware.
@@ -54,11 +54,7 @@ battery_monitor::BatteryAdcConfig adc_cfg = {
 
 battery_monitor::BatteryMonitorConfig monitor_cfg = {
     .divider_top_ohms = 240000,    // 240k resistor
-    .divider_bottom_ohms = 240000, // 240k resistor (1:2 ratio)
-    .empty_mv = 3000,              // 3.0V is empty
-    .full_mv = 4200,               // 4.2V is full
-    .low_mv = 3400,                // 3.4V is low
-    .critical_mv = 3200            // 3.2V is critical
+    .divider_bottom_ohms = 240000  // 240k resistor (1:2 ratio)
 };
 
 // 2. Instantiate stateless HAL wrappers
@@ -77,10 +73,9 @@ void app_main() {
         // 5. Read battery status
         battery_monitor::BatteryReading reading;
         if (battery_monitor.read(reading) == ESP_OK) {
-            printf("Battery: %d mV (%d%%) - State: %d\n", 
+            printf("Battery: %d mV (ADC: %d mV)\n", 
                    reading.voltage_mv, 
-                   reading.percent, 
-                   static_cast<int>(reading.state));
+                   reading.adc_mv);
         }
     }
 }
@@ -90,6 +85,6 @@ void app_main() {
 
 ## Unit Testing
 
-This component includes a comprehensive suite of host-based unit tests to verify electrical division mapping, timing accuracy, calibration fallbacks, and battery state transitions.
+This component includes a comprehensive suite of host-based unit tests to verify electrical division mapping, timing accuracy, and calibration fallbacks.
 
 For instructions on how to run the host tests and generate coverage reports, see [host_test/README.md](host_test/README.md).

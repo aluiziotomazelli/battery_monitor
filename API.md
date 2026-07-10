@@ -6,37 +6,19 @@ This document provides the reference for the BatteryMonitor component API.
 
 ## Core Types
 
-### `enum class BatteryState`
-Represents the state of the battery based on voltage thresholds.
-
-| Value | Description |
-|-------|-------------|
-| `UNKNOWN` | Battery state is not determined or reading failed. |
-| `CRITICAL` | Battery voltage is critically low (requires immediate action). |
-| `LOW` | Battery voltage is low. |
-| `NORMAL` | Battery is operating in normal voltage range. |
-| `FULL` | Battery is fully charged. |
-
 ### `struct BatteryMonitorConfig`
-Configuration parameters for the voltage divider and battery thresholds.
+Configuration parameters for the voltage divider.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `divider_top_ohms` | `uint32_t` | 240000 | Resistor value connected to Battery positive terminal (ohms). |
 | `divider_bottom_ohms` | `uint32_t` | 240000 | Resistor value connected to Ground (ohms). |
-| `empty_mv` | `uint16_t` | 3000 | Battery voltage representing 0% capacity (millivolts). |
-| `full_mv` | `uint16_t` | 4200 | Battery voltage representing 100% capacity (millivolts). |
-| `low_mv` | `uint16_t` | 3400 | Battery voltage representing low battery level (millivolts). |
-| `critical_mv` | `uint16_t` | 3200 | Battery voltage representing critical battery level (millivolts). |
 
 > [!IMPORTANT]
 > **Configuration Validation during `init()`**:
-> The config parameters are validated when calling `init()`. If validation fails, `init()` returns `ESP_ERR_INVALID_ARG` and the initialization fails.
-> The rules are:
+> The config parameters are validated when calling `init()`. If validation fails, `init()` returns `ESP_ERR_INVALID_ARG`.
+> The rule is:
 > 1. `divider_bottom_ohms` cannot be `0`.
-> 2. `full_mv` must be strictly greater than `empty_mv` (to prevent division by zero in percentage calculation).
-> 3. `critical_mv` cannot be greater than `low_mv`.
-> 4. `low_mv` cannot be greater than `full_mv`.
 
 ### `struct BatteryAdcConfig`
 Configuration parameters for battery ADC hardware channel and sampling.
@@ -55,15 +37,13 @@ Container for the results of a battery measurement.
 |-------|------|---------|-------------|
 | `voltage_mv` | `uint16_t` | 0 | Compensated battery voltage in millivolts. |
 | `adc_mv` | `uint16_t` | 0 | Measured ADC pin voltage in millivolts. |
-| `percent` | `uint8_t` | 0 | Estimated charge capacity percentage (0 to 100). |
-| `state` | `BatteryState` | `UNKNOWN` | Classified battery charge level state. |
 
 ---
 
 ## Component Interfaces
 
 ### `class IBatteryMonitor`
-Abstract interface providing high-level battery status and voltage monitoring.
+Abstract interface providing high-level battery voltage monitoring.
 
 #### `esp_err_t init()`
 Initializes the battery monitor and underlying ADC reader.
@@ -74,7 +54,7 @@ Deinitializes the battery monitor and cleans up ADC resources.
 * **Returns**: `ESP_OK` on success, or hardware deinitialization error code.
 
 #### `esp_err_t read(BatteryReading& out)`
-Takes a new battery reading, calculates compensated voltage, linear percentage, and state classification.
+Takes a new battery reading and calculates compensated voltage.
 * **Parameters**: `out` - Reference to a structure where the reading results will be stored.
 * **Returns**: `ESP_OK` on success, `ESP_ERR_INVALID_STATE` if not initialized, or a reading error.
 

@@ -80,31 +80,7 @@ esp_err_t BatteryMonitor::read(BatteryReading& out)
 
     out.voltage_mv = static_cast<uint16_t>(calculated_voltage);
 
-    // Calculate battery percentage (linear mapping)
-    if (out.voltage_mv <= config_.empty_mv) {
-        out.percent = 0;
-    }
-    else if (out.voltage_mv >= config_.full_mv) {
-        out.percent = 100;
-    }
-    else {
-        out.percent = static_cast<uint8_t>(
-            (static_cast<uint32_t>(out.voltage_mv - config_.empty_mv) * 100) / (config_.full_mv - config_.empty_mv));
-    }
 
-    // Classify battery state
-    if (out.voltage_mv <= config_.critical_mv) {
-        out.state = BatteryState::CRITICAL;
-    }
-    else if (out.voltage_mv <= config_.low_mv) {
-        out.state = BatteryState::LOW;
-    }
-    else if (out.voltage_mv >= config_.full_mv) {
-        out.state = BatteryState::FULL;
-    }
-    else {
-        out.state = BatteryState::NORMAL;
-    }
 
     return ESP_OK;
 }
@@ -118,21 +94,6 @@ esp_err_t BatteryMonitor::validate_config() const
 {
     if (config_.divider_bottom_ohms == 0) {
         ESP_LOGE(TAG, "Invalid config: divider_bottom_ohms cannot be 0");
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (config_.full_mv <= config_.empty_mv) {
-        ESP_LOGE(TAG, "Invalid config: full_mv (%d) must be greater than empty_mv (%d)",
-                 config_.full_mv, config_.empty_mv);
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (config_.critical_mv > config_.low_mv) {
-        ESP_LOGE(TAG, "Invalid config: critical_mv (%d) cannot be greater than low_mv (%d)",
-                 config_.critical_mv, config_.low_mv);
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (config_.low_mv > config_.full_mv) {
-        ESP_LOGE(TAG, "Invalid config: low_mv (%d) cannot be greater than full_mv (%d)",
-                 config_.low_mv, config_.full_mv);
         return ESP_ERR_INVALID_ARG;
     }
     return ESP_OK;
