@@ -35,8 +35,9 @@ esp_err_t AdcBatteryReader::init() {
 
     // Create oneshot unit handle
     adc_oneshot_unit_init_cfg_t init_config = {
-        .unit_id = adc_unit_,
-        .clk_src = static_cast<adc_oneshot_clk_src_t>(0), // Default clock source
+        // Cast to 0 (default clock source) is used instead of a specific enum constant (like ADC_RTC_CLK_SRC_DEFAULT)
+        // because the clock source enum varies by target and is not universally available on all ESP32 chips.
+        .clk_src = static_cast<adc_oneshot_clk_src_t>(0),
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
     err = oneshot_hal_.new_unit(&init_config, &adc_handle_);

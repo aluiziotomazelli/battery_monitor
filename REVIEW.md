@@ -6,175 +6,98 @@
 
 ---
 
-## Pontos Fortes
+## Strengths
 
-### Arquitetura e Design
-- **HAL abstrato e testável**: Todas as dependências de hardware (ADC, calibração, timer) são completamente abstraídas via interfaces ABC. Isso permite testes unitários de host sem nenhum hardware real.
-- **Dependency Injection por construtor**: `AdcBatteryReader` e `BatteryMonitor` recebem todas as dependências via construtor, eliminando estado global e acoplamento implícito.
-- **SRP bem respeitado**: `AdcBatteryReader` cuida exclusivamente da leitura do hardware; `BatteryMonitor` cuida exclusivamente da lógica de negócio (divisor, percentual, estado). Não há mistura de responsabilidades.
-- **Fallback gracioso de calibração**: Se `adc_cali_create_scheme_curve_fitting()` falhar (eFuse não programado, hardware incompatível), o componente continua operando com conversão linear. A calibração é "best-effort" sem impacto na inicialização.
-- **Cleanup em falha de `init()`**: Se `config_channel()` falhar, `del_unit()` é chamado antes de retornar, evitando resource leak do handle do ADC.
-- **Compilação condicional para host**: Fake types de `esp_adc` dentro de `#if defined(__linux__)` permitem compilar toda a lógica de negócio no host sem depender de headers do IDF target.
-- **Cobertura de testes**: 26 testes cobrindo 96.7% das linhas de produção e 100% das funções públicas. Paths de erro críticos (falha de init, falha de leitura, divisor zero) todos testados.
+### Architecture and Design
+- **Abstract and Testable HAL**: All hardware dependencies (ADC, calibration, timer) are fully abstracted via ABC interfaces. This enables host-based unit testing without any real hardware.
+- **Constructor-Based Dependency Injection**: `AdcBatteryReader` and `BatteryMonitor` receive all their dependencies via their constructors, eliminating global state and implicit coupling.
+- **Single Responsibility Principle (SRP) Well Respected**: `AdcBatteryReader` is exclusively responsible for hardware reading; `BatteryMonitor` handles the business logic (voltage divider, percentage, state classification). Responsibilities are not mixed.
+- **Graceful Calibration Fallback**: If `adc_cali_create_scheme_curve_fitting()` fails (unprogrammed eFuse or unsupported hardware), the component continues to operate using linear conversion fallback. Calibration is "best-effort" without blocking initialization.
+- **Cleanup on `init()` Failure**: If `config_channel()` fails, `del_unit()` is called before returning, preventing resource leaks of the ADC handle.
+- **Conditional Compilation for Host**: Fake `esp_adc` types inside `#if defined(__linux__)` allow compiling all business logic on the host without depending on target-specific IDF headers.
+- **Test Coverage**: 26 tests covering 96.7% of production lines and 100% of public functions. Critical error paths (initialization failures, reading failures, division by zero) are thoroughly tested.
 
-### Qualidade de Código
-- **Prevenção de double-init/deinit**: Ambas as classes verificam `initialized_` no início de `init()`, `deinit()` e `read()` e retornam `ESP_ERR_INVALID_STATE` imediatamente.
-- **Overflow controlado no percentual**: O cálculo de percentual faz upcast para `uint32_t` antes da multiplicação por 100, evitando overflow com valores de tensão próximos dos limites.
-- **Delay apenas entre amostras**: O loop de amostragem chama `delay_us()` somente entre amostras, não após a última — comportamento correto que evita latência desnecessária.
-
----
-
-## Pontos Fracos e Possíveis Melhorias
-
-### [MEDIUM] 1. Validação de configuração atrasada
-
-**Arquivo:** `src/battery_monitor.cpp:71`
-
-`divider_bottom_ohms == 0` é verificado dentro de `read()`, mas não em `init()` ou no construtor.
-
-```cpp
-// Comportamento atual: só falha em runtime na primeira leitura
-if (config_.divider_bottom_ohms == 0) {
-    return ESP_ERR_INVALID_ARG;  // tarde demais
-}
-```
-
-Outras inconsistências de configuração também não são verificadas:
-- `full_mv <= empty_mv` → divisão por zero no cálculo de percentual
-- `critical_mv > low_mv` → estados mal ordenados, classificação incorreta
-- `sample_count == 0` → tratado com fallback para 1, mas silenciosamente
-
-**Sugestão:** Adicionar um método `validate_config()` chamado em `init()` que verifique todas as invariantes da configuração de uma vez, retornando `ESP_ERR_INVALID_ARG` com log descritivo.
-
-```cpp
-// Proposta
-static esp_err_t validate_config(const BatteryMonitorConfig& cfg) {
-    if (cfg.divider_bottom_ohms == 0)       return ESP_ERR_INVALID_ARG;
-    if (cfg.full_mv <= cfg.empty_mv)        return ESP_ERR_INVALID_ARG;
-    if (cfg.critical_mv >= cfg.low_mv)      return ESP_ERR_INVALID_ARG;
-    if (cfg.low_mv >= cfg.full_mv)          return ESP_ERR_INVALID_ARG;
-    return ESP_OK;
-}
-```
+### Code Quality
+- **Prevention of Double-Init/Deinit**: Both classes check `initialized_` at the beginning of `init()`, `deinit()`, and `read()` and return `ESP_ERR_INVALID_STATE` immediately if invalid.
+- **Controlled Overflow in Percentage**: The percentage calculation does an upcast to `uint32_t` before multiplying by 100, preventing overflow for voltage values near limits.
+- **Delay Only Between Samples**: The sampling loop calls `delay_us()` only between samples, not after the last one — correct behavior that avoids unnecessary latency.
 
 ---
 
-### [MEDIUM] 2. Configuração do clock source opaca
+## Weaknesses and Potential Improvements
 
-**Arquivo:** `src/adc_battery_reader.cpp` (init)
+### [MEDIUM] 1. Delayed Configuration Validation (Fixed)
+
+**File:** `src/battery_monitor.cpp`
+
+Previously, `divider_bottom_ohms == 0` was only checked inside `read()`, and other invalid settings (e.g., `full_mv <= empty_mv`) were not checked.
+
+**Status:** Fixed. Added `validate_config()` called inside `init()` to fail fast with `ESP_ERR_INVALID_ARG` on invalid configurations.
+
+---
+
+### [MEDIUM] 2. Opaque Clock Source Configuration (Kept with Comments)
+
+**File:** `src/adc_battery_reader.cpp` (init)
 
 ```cpp
-// Atual: valor inteiro literal sem semântica
+// Current: literal integer value without semantics
 .clk_src = static_cast<adc_oneshot_clk_src_t>(0),
 ```
 
-O cast para `0` funciona porque o ESP-IDF internamente trata `0` como "default clock source", mas isso é um detalhe de implementação não documentado.
+**Discussion:** Casting to `0` works because ESP-IDF internally treats `0` as the default clock source. However, not all ESP32 targets support `ADC_RTC_CLK_SRC_DEFAULT` natively. 
 
-**Sugestão:** Usar a constante nominal do ESP-IDF se disponível para o target:
-
-```cpp
-// ESP-IDF 5.x define ADC_RTC_CLK_SRC_DEFAULT para ESP32-C3
-.clk_src = ADC_RTC_CLK_SRC_DEFAULT,  // se disponível para o target
-// ou, documentar explicitamente o motivo do 0:
-// .clk_src = static_cast<adc_oneshot_clk_src_t>(0), // 0 = ADC_RTC_CLK_SRC_DEFAULT
-```
-
-> **Nota:** A disponibilidade de `ADC_RTC_CLK_SRC_DEFAULT` varia por chip e versão do IDF. Requer consulta à documentação do target em uso.
+**Decision:** Kept as `0` for maximum target compatibility, but added an explanatory comment documenting this decision.
 
 ---
 
-### [LOW] 3. `get_time_us()` na `IBmHalTimer` sem uso
+### [LOW] 3. Unused `get_time_us()` in `IBmHalTimer` (Kept)
 
-**Arquivo:** `include/interfaces/i_bm_hal_timer.hpp`
+**File:** `include/interfaces/i_bm_hal_timer.hpp`
 
-O método `get_time_us()` está declarado na interface e implementado em `BmHalTimer` e `MockBmHalTimer`, mas não é chamado em nenhum ponto de `AdcBatteryReader` ou `BatteryMonitor`.
+The `get_time_us()` method is declared in the interface and implemented in `BmHalTimer` / `MockBmHalTimer`, but is currently not called.
 
-**Trade-off:** Manter a função na interface é defensivo — ela pode ser útil no futuro para implementar timeout no loop de amostragem (ver ponto 4) ou para timestamps de log. O custo é mínimo.
-
-**Opções:**
-- **Manter** como preparação para melhoria futura do watchdog de timeout.
-- **Remover** agora e readicionar quando houver caso de uso concreto, seguindo YAGNI.
+**Decision:** Kept in the interface defensively. It remains useful for future improvements (e.g., sample loop timeouts) or log timestamps.
 
 ---
 
-### [LOW] 4. Ausência de timeout no loop de amostragem
+### [LOW] 4. Absence of Timeout in the Sampling Loop (Kept)
 
-**Arquivo:** `src/adc_battery_reader.cpp` (read_adc_mv)
+**File:** `src/adc_battery_reader.cpp` (read_adc_mv)
 
-`timer_hal_.delay_us()` é chamado de forma bloqueante `(sample_count - 1)` vezes. Com a configuração padrão (16 amostras, 1000 µs de delay), o tempo total de bloqueio é ~15 ms.
+The sampling loop blockingly calls `timer_hal_.delay_us()` `(sample_count - 1)` times, blocking for ~15 ms under default configuration (16 samples, 1000 µs delay).
 
-```
-Tempo máximo do loop = (sample_count - 1) * sample_delay_us
-                     = 15 * 1000 µs = 15 ms
-```
-
-**Por que é baixo risco:** `adc_oneshot_read()` é síncrono e extremamente rápido no ESP-IDF (~10–100 µs). Não há operação de I/O, DMA ou tarefa bloqueante envolvida. Um travamento do ADC seria um evento catastrófico de hardware, não um cenário de timeout.
-
-**Potencial de melhoria:** Se `get_time_us()` fosse usado, seria possível implementar um timeout por amostra individual:
-
-```cpp
-// Exemplo conceitual
-int64_t deadline = timer_hal_.get_time_us() + SAMPLE_TIMEOUT_US;
-// ... lógica de verificação de deadline
-```
-
-Na prática, para um dispositivo de deep sleep cíclico como este, o risco real é negligenciável.
+**Decision:** Kept as is. Since `adc_oneshot_read()` is synchronous and extremely fast (~10–100 µs), there is no blocked I/O or DMA. An ADC freeze is a catastrophic hardware failure, not a normal timeout scenario. The risk is negligible.
 
 ---
 
-### [LOW] 5. Ausência de histerese nos thresholds de estado
+### [LOW] 5. Absence of Hysteresis in State Thresholds (Kept)
 
-**Arquivo:** `src/battery_monitor.cpp:94-105`
+**File:** `src/battery_monitor.cpp`
 
-Os thresholds de classificação de estado (`CRITICAL`, `LOW`, `NORMAL`, `FULL`) são verificados sem histerese. Um valor oscilando em torno de `low_mv` (ex: 3400 mV) causaria alternância entre `LOW` e `NORMAL` a cada ciclo.
+Battery state thresholds (`CRITICAL`, `LOW`, `NORMAL`, `FULL`) are checked without hysteresis. A voltage oscillating around `low_mv` could toggle the state rapidly.
 
-**Trade-off documentado:** Em dispositivos com deep sleep cíclico, o estado anterior não é preservado entre ciclos sem uso de NVS ou RTC memory. Implementar histerese stateful requereria uma das seguintes abordagens:
-
-| Abordagem | Custo | Persistência |
-|---|---|---|
-| RTC memory (`RTC_DATA_ATTR`) | Baixo | Perde no power-off total |
-| NVS | Médio | Persiste em todos os cenários |
-| Histerese em banda sem estado | Zero | Imune à oscilação por definição |
-
-**Histerese sem estado (proposta simples):**
-```cpp
-// Margem configurável na BatteryMonitorConfig
-static constexpr uint16_t HYSTERESIS_MV = 50;
-if (voltage_mv <= critical_mv)                   state = CRITICAL;
-else if (voltage_mv <= low_mv + HYSTERESIS_MV)   state = LOW;
-else if (voltage_mv >= full_mv)                  state = FULL;
-else                                             state = NORMAL;
-```
-Essa abordagem não requer estado persistido, mas exige que a margem `HYSTERESIS_MV` seja configurável.
+**Decision:** Kept without hysteresis. In cyclic deep sleep devices, state is not preserved between sleep cycles unless persisted to NVS or RTC memory. For this application, the current behavior is an acceptable trade-off.
 
 ---
 
-### [LOW] 6. `out.adc_mv` preenchido antes da verificação do divisor
+### [LOW] 6. Struct Partially Filled on Error (Fixed)
 
-**Arquivo:** `src/battery_monitor.cpp:68-74`
+**File:** `src/battery_monitor.cpp`
 
-```cpp
-out.adc_mv = adc_mv;                         // (linha 68) campo preenchido
-if (config_.divider_bottom_ohms == 0) {       // (linha 71) verificação tardia
-    return ESP_ERR_INVALID_ARG;               // saída com struct parcialmente preenchida
-}
-```
+Previously, `out.adc_mv` was filled before verifying `divider_bottom_ohms == 0`, potentially returning a partially populated struct to the caller.
 
-Em caso de erro, `out` retorna com `adc_mv` preenchido mas `voltage_mv`, `percent` e `state` nos valores default. O chamador pode interpretar erroneamente uma struct com dados parciais válidos.
-
-**Sugestão:** Verificar o divisor antes de qualquer escrita em `out`. Com a correção do ponto #1 (validação em `init()`), esse ponto deixa de ser relevante pois o erro seria capturado antes do `read()`.
+**Status:** Fixed. With the configuration validation moved to `init()`, `read()` is guaranteed to operate under valid configs, preventing this failure mode entirely.
 
 ---
 
-## Resumo Executivo
+## Executive Summary
 
-| # | Ponto | Severidade | Complexidade de Correção |
+| # | Item | Severity | Status / Resolution |
 |---|---|---|---|
-| 1 | Validação de config atrasada (divisor zero, thresholds inválidos) | Medium | Baixa |
-| 2 | Clock source ADC opaco (cast `0`) | Medium | Baixa |
-| 3 | `get_time_us()` sem uso na interface | Low | Baixa |
-| 4 | Sem timeout no loop de amostragem | Low | Média |
-| 5 | Ausência de histerese nos thresholds | Low | Média |
-| 6 | Struct parcialmente preenchida em erro de divisor | Low | Baixa (resolvido pelo #1) |
-
-Os pontos de maior custo-benefício para correção imediata são o **#1** (validação em `init()`) e o **#2** (documentar/clarificar o clock source), pois têm baixa complexidade e melhoram diretamente a robustez e legibilidade do código.
+| 1 | Delayed config validation | Medium | **Fixed** (validated during `init()`) |
+| 2 | Opaque ADC clock source | Medium | **Kept** (documented with comments) |
+| 3 | Unused `get_time_us()` in timer interface | Low | **Kept** (defensive design) |
+| 4 | No timeout in sampling loop | Low | **Kept** (low risk, synchronous ADC) |
+| 5 | No hysteresis in thresholds | Low | **Kept** (acceptable deep sleep trade-off) |
+| 6 | Struct partially filled on error | Low | **Fixed** (resolved by #1) |
