@@ -1,8 +1,8 @@
 # BatteryMonitor Component
 
-[![ESP-IDF Build](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/build.yml/badge.svg)](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/build.yml)
-[![Host Tests](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml/badge.svg)](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml)
-[![Coverage](https://img.shields.io/badge/coverage-96.7%25-green)](https://aluiziotomazelli.github.io/battery-monitor/index.html)
+[![ESP-IDF Build](https://github.com/aluiziotomazelli/battery_monitor/actions/workflows/build.yml/badge.svg)](https://github.com/aluiziotomazelli/battery_monitor/actions/workflows/build.yml)
+[![Host Tests](https://github.com/aluiziotomazelli/battery_monitor/actions/workflows/host_test.yml/badge.svg)](https://github.com/aluiziotomazelli/battery_monitor/actions/workflows/host_test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-96.7%25-green)](https://aluiziotomazelli.github.io/battery_monitor/index.html)
 
 The `BatteryMonitor` component provides a robust abstraction for monitoring battery voltage levels. It calculates battery voltage using a hardware voltage divider scale, averages out noise via multi-sample ADC readings, and applies factory calibration parameters.
 
