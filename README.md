@@ -2,7 +2,7 @@
 
 [![ESP-IDF Build](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/build.yml/badge.svg)](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/build.yml)
 [![Host Tests](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml/badge.svg)](https://github.com/aluiziotomazelli/battery-monitor/actions/workflows/host_test.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-orange)](https://aluiziotomazelli.github.io/battery-monitor/index.html)
+[![Coverage](https://img.shields.io/badge/coverage-96.7%25-green)](https://aluiziotomazelli.github.io/battery-monitor/index.html)
 
 The `BatteryMonitor` component provides a robust abstraction for monitoring rechargeable battery state, voltage levels, and capacity percentages. It calculates battery voltage using a hardware voltage divider scale, averages out noise via multi-sample ADC readings, applies factory calibration parameters, and classifies battery health/levels into standard states.
 
