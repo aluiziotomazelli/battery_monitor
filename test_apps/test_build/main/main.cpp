@@ -24,11 +24,7 @@ extern "C" void app_main(void)
 
     battery_monitor::BatteryMonitorConfig monitor_cfg = {
         .divider_top_ohms = 240000,
-        .divider_bottom_ohms = 240000,
-        .empty_mv = 3000,
-        .full_mv = 4200,
-        .low_mv = 3400,
-        .critical_mv = 3200
+        .divider_bottom_ohms = 240000
     };
 
     // 3. Instantiate component classes (Injecting dependencies)
@@ -39,8 +35,8 @@ extern "C" void app_main(void)
     if (monitor.init() == ESP_OK) {
         battery_monitor::BatteryReading reading;
         if (monitor.read(reading) == ESP_OK) {
-            ESP_LOGI("main", "Battery voltage: %d mV (%d%%), state: %d",
-                     reading.voltage_mv, reading.percent, static_cast<int>(reading.state));
+            ESP_LOGI("main", "Battery voltage: %d mV (ADC: %d mV)",
+                     reading.voltage_mv, reading.adc_mv);
         }
         monitor.deinit();
     }
