@@ -29,6 +29,15 @@ Configuration parameters for the voltage divider and battery thresholds.
 | `low_mv` | `uint16_t` | 3400 | Battery voltage representing low battery level (millivolts). |
 | `critical_mv` | `uint16_t` | 3200 | Battery voltage representing critical battery level (millivolts). |
 
+> [!IMPORTANT]
+> **Configuration Validation during `init()`**:
+> The config parameters are validated when calling `init()`. If validation fails, `init()` returns `ESP_ERR_INVALID_ARG` and the initialization fails.
+> The rules are:
+> 1. `divider_bottom_ohms` cannot be `0`.
+> 2. `full_mv` must be strictly greater than `empty_mv` (to prevent division by zero in percentage calculation).
+> 3. `critical_mv` cannot be greater than `low_mv`.
+> 4. `low_mv` cannot be greater than `full_mv`.
+
 ### `struct BatteryAdcConfig`
 Configuration parameters for battery ADC hardware channel and sampling.
 
