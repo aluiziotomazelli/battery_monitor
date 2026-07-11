@@ -8,9 +8,11 @@ idf_component_register(
     INCLUDE_DIRS
         "."
         "../../common"
+        "../../../external/idf_hals/mocks"
         
     REQUIRES 
         battery_monitor
+        idf_hals
         gtest
         WHOLE_ARCHIVE
 )

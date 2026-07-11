@@ -8,7 +8,7 @@ static const char *TAG = "AdcBatteryReader";
 
 namespace battery_monitor {
 
-AdcBatteryReader::AdcBatteryReader(IHalAdcOneshot& oneshot_hal, IHalAdcCalibration& cali_hal, IBmHalTimer& timer_hal, const BatteryAdcConfig& config)
+AdcBatteryReader::AdcBatteryReader(idf_hals::IHalAdcOneshot& oneshot_hal, idf_hals::IHalAdcCalibration& cali_hal, idf_hals::ISysRomHAL& timer_hal, const BatteryAdcConfig& config)
     : oneshot_hal_(oneshot_hal)
     , cali_hal_(cali_hal)
     , timer_hal_(timer_hal)
@@ -90,7 +90,6 @@ esp_err_t AdcBatteryReader::deinit() {
         return ESP_ERR_INVALID_STATE;
     }
 
-    // Delete calibration handle if created
     if (cali_supported_ && cali_handle_ != nullptr) {
         esp_err_t err = cali_hal_.delete_scheme_curve_fitting(cali_handle_);
         if (err != ESP_OK) {

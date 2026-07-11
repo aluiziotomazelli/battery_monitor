@@ -7,7 +7,9 @@
 #include "mock_i_adc_battery_reader.hpp"
 #include "mock_hal_adc_oneshot.hpp"
 #include "mock_hal_adc_calibration.hpp"
-#include "mock_bm_hal_timer.hpp"
+#include "mock_hal_sys_rom.hpp"
+
+using namespace idf_hals;
 
 // Classes under test
 #include "battery_monitor.hpp"
@@ -172,7 +174,7 @@ protected:
     void SetUp() override {
         mock_adc_oneshot = std::make_shared<NiceMock<MockHalAdcOneshot>>();
         mock_adc_cali = std::make_shared<NiceMock<MockHalAdcCalibration>>();
-        mock_timer = std::make_shared<NiceMock<MockBmHalTimer>>();
+        mock_timer = std::make_shared<NiceMock<MockSysRomHAL>>();
         
         config_.gpio_num = 3;
         config_.sample_count = 10;
@@ -187,7 +189,7 @@ protected:
 
     std::shared_ptr<NiceMock<MockHalAdcOneshot>> mock_adc_oneshot;
     std::shared_ptr<NiceMock<MockHalAdcCalibration>> mock_adc_cali;
-    std::shared_ptr<NiceMock<MockBmHalTimer>> mock_timer;
+    std::shared_ptr<NiceMock<MockSysRomHAL>> mock_timer;
     BatteryAdcConfig config_;
     std::unique_ptr<AdcBatteryReader> reader;
     

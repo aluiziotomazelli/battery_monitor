@@ -10,6 +10,7 @@ list(APPEND EXTRA_COMPONENT_DIRS
     "${PROJECT_ROOT}"
     "${PROJECT_ROOT}/host_test/gtest"
     "${PROJECT_ROOT}/host_test/common"
+    "${PROJECT_ROOT}/external"
     "$ENV{IDF_PATH}/tools/mocks/esp_timer"
     "$ENV{IDF_PATH}/tools/mocks/driver"
 )
@@ -18,6 +19,7 @@ list(APPEND EXTRA_COMPONENT_DIRS
 set(COMPONENTS 
     "main"
     "battery_monitor"
+    "idf_hals"
     "gtest"
 )
 

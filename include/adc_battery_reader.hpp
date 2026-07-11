@@ -6,7 +6,7 @@
 #include "interfaces/i_adc_battery_reader.hpp"
 #include "interfaces/i_hal_adc_oneshot.hpp"
 #include "interfaces/i_hal_adc_calibration.hpp"
-#include "interfaces/i_bm_hal_timer.hpp"
+#include "interfaces/i_hal_sys_rom.hpp"
 #include "battery_monitor_types.hpp"
 
 namespace battery_monitor {
@@ -27,7 +27,7 @@ public:
      * @param timer_hal Reference to the timer/delay HAL.
      * @param config Configuration for ADC pin and sampling.
      */
-    AdcBatteryReader(IHalAdcOneshot& oneshot_hal, IHalAdcCalibration& cali_hal, IBmHalTimer& timer_hal, const BatteryAdcConfig& config);
+    AdcBatteryReader(idf_hals::IHalAdcOneshot& oneshot_hal, idf_hals::IHalAdcCalibration& cali_hal, idf_hals::ISysRomHAL& timer_hal, const BatteryAdcConfig& config);
 
     ~AdcBatteryReader() override = default;
 
@@ -44,9 +44,9 @@ public:
     bool is_initialized() const override;
 
 private:
-    IHalAdcOneshot& oneshot_hal_;
-    IHalAdcCalibration& cali_hal_;
-    IBmHalTimer& timer_hal_;
+    idf_hals::IHalAdcOneshot& oneshot_hal_;
+    idf_hals::IHalAdcCalibration& cali_hal_;
+    idf_hals::ISysRomHAL& timer_hal_;
     BatteryAdcConfig config_;
     bool initialized_;
     adc_oneshot_unit_handle_t adc_handle_;

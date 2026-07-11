@@ -5,27 +5,22 @@ if(IDF_TARGET STREQUAL "linux")
         SRCS 
             "src/battery_monitor.cpp"
             "src/adc_battery_reader.cpp"
-            "src/bm_hal_timer.cpp"
         INCLUDE_DIRS 
             "include"
             "include/interfaces"
         REQUIRES
-            esp_timer
+            idf_hals
     )
 else()
     idf_component_register(
         SRCS 
             "src/battery_monitor.cpp"
             "src/adc_battery_reader.cpp"
-            "src/hal_adc_oneshot.cpp"
-            "src/hal_adc_calibration.cpp"
-            "src/bm_hal_timer.cpp"
         INCLUDE_DIRS 
             "include"
             "include/interfaces"
         REQUIRES 
-            esp_adc
-            esp_timer
+            idf_hals
     )
 endif()
 
