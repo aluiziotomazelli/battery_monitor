@@ -42,7 +42,7 @@ Here is a typical initialization and usage flow of the component:
 #include "adc_battery_reader.hpp"
 #include "hal_adc_oneshot.hpp"
 #include "hal_adc_calibration.hpp"
-#include "bm_hal_timer.hpp"
+#include "hal_sys_rom.hpp"
 
 // 1. Define configuration settings
 battery_monitor::BatteryAdcConfig adc_cfg = {
@@ -58,9 +58,9 @@ battery_monitor::BatteryMonitorConfig monitor_cfg = {
 };
 
 // 2. Instantiate stateless HAL wrappers
-static battery_monitor::HalAdcOneshot oneshot_hal;
-static battery_monitor::HalAdcCalibration cali_hal;
-static battery_monitor::BmHalTimer timer_hal;
+static idf_hals::HalAdcOneshot oneshot_hal;
+static idf_hals::HalAdcCalibration cali_hal;
+static idf_hals::SysRomHAL timer_hal;
 
 // 3. Instantiate component classes (Injecting dependencies)
 static battery_monitor::AdcBatteryReader adc_reader(oneshot_hal, cali_hal, timer_hal, adc_cfg);

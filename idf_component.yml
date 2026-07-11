@@ -1,5 +1,5 @@
 # Battery Monitor Component Manifest
-version: "1.0.0"
+version: "1.0.1"
 description: "A flexible and testable ESP-IDF component for battery monitoring on ESP32-C3."
 maintainers:
   - "aluiziotomazelli"
