@@ -64,13 +64,7 @@ esp_err_t AdcBatteryReader::init() {
     cali_supported_ = false;
     cali_handle_ = nullptr;
     if (config_.enable_calibration) {
-        adc_cali_curve_fitting_config_t cali_config = {
-            .unit_id = adc_unit_,
-            .chan = adc_channel_,
-            .atten = ADC_ATTEN_DB_12,
-            .bitwidth = ADC_BITWIDTH_DEFAULT,
-        };
-        err = cali_hal_.create_scheme_curve_fitting(&cali_config, &cali_handle_);
+        err = cali_hal_.create_scheme(adc_unit_, adc_channel_, ADC_ATTEN_DB_12, ADC_BITWIDTH_DEFAULT, &cali_handle_);
         if (err == ESP_OK) {
             cali_supported_ = true;
             ESP_LOGI(TAG, "ADC calibration initialized successfully");
@@ -91,7 +85,7 @@ esp_err_t AdcBatteryReader::deinit() {
     }
 
     if (cali_supported_ && cali_handle_ != nullptr) {
-        esp_err_t err = cali_hal_.delete_scheme_curve_fitting(cali_handle_);
+        esp_err_t err = cali_hal_.delete_scheme(cali_handle_);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Failed to delete ADC calibration: %d", err);
         }

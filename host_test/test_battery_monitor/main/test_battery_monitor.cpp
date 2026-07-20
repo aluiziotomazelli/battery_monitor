@@ -207,8 +207,8 @@ TEST_F(AdcBatteryReaderTest, InitSuccessWithCalibration) {
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
 
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
-        .WillOnce(DoAll(SetArgPointee<1>(fake_cali_handle), Return(ESP_OK)));
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<4>(fake_cali_handle), Return(ESP_OK)));
 
     EXPECT_EQ(reader->init(), ESP_OK);
     EXPECT_TRUE(reader->is_initialized());
@@ -227,8 +227,8 @@ TEST_F(AdcBatteryReaderTest, InitSuccessWithoutCalibration) {
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
 
-    // create_scheme_curve_fitting should NOT be called
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _)).Times(0);
+    // create_scheme should NOT be called
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _)).Times(0);
 
     EXPECT_EQ(reader->init(), ESP_OK);
     EXPECT_TRUE(reader->is_initialized());
@@ -281,7 +281,7 @@ TEST_F(AdcBatteryReaderTest, InitCalibrationFailsStillSucceeds) {
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
 
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
         .WillOnce(Return(ESP_ERR_NOT_SUPPORTED));
 
     // Reader initialization should succeed even if calibration fails
@@ -296,7 +296,7 @@ TEST_F(AdcBatteryReaderTest, DoubleInitReturnsInvalidState) {
         .WillOnce(DoAll(SetArgPointee<1>(fake_unit_handle), Return(ESP_OK)));
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
         .WillOnce(Return(ESP_ERR_NOT_SUPPORTED));
 
     ASSERT_EQ(reader->init(), ESP_OK);
@@ -311,13 +311,13 @@ TEST_F(AdcBatteryReaderTest, DeinitSuccess) {
         .WillOnce(DoAll(SetArgPointee<1>(fake_unit_handle), Return(ESP_OK)));
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
-        .WillOnce(DoAll(SetArgPointee<1>(fake_cali_handle), Return(ESP_OK)));
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<4>(fake_cali_handle), Return(ESP_OK)));
 
     ASSERT_EQ(reader->init(), ESP_OK);
 
     // Deinit
-    EXPECT_CALL(*mock_adc_cali, delete_scheme_curve_fitting(fake_cali_handle))
+    EXPECT_CALL(*mock_adc_cali, delete_scheme(fake_cali_handle))
         .WillOnce(Return(ESP_OK));
     EXPECT_CALL(*mock_adc_oneshot, del_unit(fake_unit_handle))
         .WillOnce(Return(ESP_OK));
@@ -343,8 +343,8 @@ TEST_F(AdcBatteryReaderTest, ReadAdcMvSuccessWithCalibration) {
         .WillOnce(DoAll(SetArgPointee<1>(fake_unit_handle), Return(ESP_OK)));
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
-        .WillOnce(DoAll(SetArgPointee<1>(fake_cali_handle), Return(ESP_OK)));
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
+        .WillOnce(DoAll(SetArgPointee<4>(fake_cali_handle), Return(ESP_OK)));
 
     ASSERT_EQ(reader->init(), ESP_OK);
 
@@ -374,7 +374,7 @@ TEST_F(AdcBatteryReaderTest, ReadAdcMvSuccessFallbackRaw) {
         .WillOnce(DoAll(SetArgPointee<1>(fake_unit_handle), Return(ESP_OK)));
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
         .WillOnce(Return(ESP_ERR_NOT_SUPPORTED));
 
     ASSERT_EQ(reader->init(), ESP_OK);
@@ -403,7 +403,7 @@ TEST_F(AdcBatteryReaderTest, ReadAdcMvFailOnReadError) {
         .WillOnce(DoAll(SetArgPointee<1>(fake_unit_handle), Return(ESP_OK)));
     EXPECT_CALL(*mock_adc_oneshot, config_channel(fake_unit_handle, ADC_CHANNEL_3, _))
         .WillOnce(Return(ESP_OK));
-    EXPECT_CALL(*mock_adc_cali, create_scheme_curve_fitting(_, _))
+    EXPECT_CALL(*mock_adc_cali, create_scheme(_, _, _, _, _))
         .WillOnce(Return(ESP_ERR_NOT_SUPPORTED));
 
     ASSERT_EQ(reader->init(), ESP_OK);
