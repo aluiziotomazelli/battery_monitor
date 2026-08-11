@@ -5,12 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2026-07-11
+## [2.1.0] - 2026-08-11
+
+### Added
+- Supported battery chemistry types via `BatteryChemistry` enum (`LI_ION_18650`, `LIFEPO4_1S`, `CUSTOM`).
+- Operational battery health state classification via `BatteryState` enum (`UNKNOWN`, `CRITICAL`, `LOW`, `NORMAL`, `FULL`).
+- Added `chemistry`, `custom_min_mv`, `custom_max_mv`, `critical_threshold_mv`, `low_threshold_mv`, and `full_threshold_mv` fields to `BatteryMonitorConfig`.
+- Added `percent` and `state` fields to `BatteryReading`.
 
 ### Changed
-- Migrated ADC and Timer HAL abstractions to the `idf_hals` submodule.
-- Replaced `BmHalTimer` with `idf_hals::SysRomHAL`.
-- Pointed internal dependencies to `idf_hals` namespace.
+- `BatteryMonitor::read()` now calculates battery percentage (0-100%) and classifies operational state based on configured chemistry and voltage thresholds.
 
 ## [2.0.0] - 2026-07-10
 
@@ -23,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Simplified `BatteryMonitor` to act strictly as a voltage reader (performing only divider ratio compensation).
 - Updated unit tests and documentation to match the simplified API.
+
+## [1.0.1] - 2026-07-11
+
+### Changed
+- Migrated ADC and Timer HAL abstractions to the `idf_hals` submodule.
+- Replaced `BmHalTimer` with `idf_hals::SysRomHAL`.
+- Pointed internal dependencies to `idf_hals` namespace.
 
 ## [1.0.0] - 2026-07-09
 
@@ -39,5 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production integration into `WaterTankApp` and `main.cpp` for XIAO-ESP32-C3.
 - Complete documentation including API Reference (`API.md`) and Architectural Decisions (`README.md`).
 
+[2.1.0]: https://github.com/aluiziotomazelli/battery-monitor/releases/tag/v2.1.0
 [2.0.0]: https://github.com/aluiziotomazelli/battery-monitor/releases/tag/v2.0.0
+[1.0.1]: https://github.com/aluiziotomazelli/battery-monitor/releases/tag/v1.0.1
 [1.0.0]: https://github.com/aluiziotomazelli/battery-monitor/releases/tag/v1.0.0

@@ -7,7 +7,7 @@ idf_component_register(
     
     INCLUDE_DIRS
         "."
-        "../../common"
+        "../../mocks"
         "../../../external/idf_hals/mocks"
         
     REQUIRES 

@@ -39,6 +39,16 @@ public:
     /** @copydoc IBatteryMonitor::is_initialized */
     bool is_initialized() const override;
 
+    /**
+     * @brief Calculates battery percentage (0-100%) for a given voltage based on configuration.
+     */
+    static uint8_t calculate_percent(uint16_t voltage_mv, const BatteryMonitorConfig& config);
+
+    /**
+     * @brief Classifies battery operational state based on voltage and thresholds.
+     */
+    static BatteryState classify_state(uint16_t voltage_mv, const BatteryMonitorConfig& config);
+
 private:
     esp_err_t validate_config() const;
 

@@ -93,6 +93,25 @@ TEST_F(BatteryMonitorTest, ReadSuccessNormalState) {
     EXPECT_EQ(monitor->read(reading), ESP_OK);
     EXPECT_EQ(reading.adc_mv, 2000);
     EXPECT_EQ(reading.voltage_mv, 4000);
+    EXPECT_EQ(reading.percent, 77); // (4000 - 3300) / (4200 - 3300) * 100 = 77%
+    EXPECT_EQ(reading.state, BatteryState::NORMAL);
+}
+
+TEST_F(BatteryMonitorTest, CalculatePercentAndClassifyStateLiIon) {
+    BatteryMonitorConfig config{};
+    config.chemistry = BatteryChemistry::LI_ION_18650;
+
+    EXPECT_EQ(BatteryMonitor::calculate_percent(3200, config), 0);
+    EXPECT_EQ(BatteryMonitor::calculate_percent(3300, config), 0);
+    EXPECT_EQ(BatteryMonitor::calculate_percent(3750, config), 50);
+    EXPECT_EQ(BatteryMonitor::calculate_percent(4200, config), 100);
+    EXPECT_EQ(BatteryMonitor::calculate_percent(4300, config), 100);
+
+    EXPECT_EQ(BatteryMonitor::classify_state(0, config), BatteryState::UNKNOWN);
+    EXPECT_EQ(BatteryMonitor::classify_state(3200, config), BatteryState::CRITICAL);
+    EXPECT_EQ(BatteryMonitor::classify_state(3500, config), BatteryState::LOW);
+    EXPECT_EQ(BatteryMonitor::classify_state(3800, config), BatteryState::NORMAL);
+    EXPECT_EQ(BatteryMonitor::classify_state(4200, config), BatteryState::FULL);
 }
 
 TEST_F(BatteryMonitorTest, ReadSuccessFullCapped) {
